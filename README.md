@@ -104,5 +104,3 @@ cd report
 latexmk -pdf main.tex
 ```
 
-## Suggested repo link for the report
-Replace the placeholder URL in the report with your GitHub repo link once you push this project.
