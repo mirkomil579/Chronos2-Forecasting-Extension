@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chronos2-project"
+version = "0.1.0"
+description = "Reproducible Chronos-2 baseline + extensions"
+requires-python = ">=3.10"
+dependencies = []
