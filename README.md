@@ -94,7 +94,7 @@ python scripts/run_domain_transfer.py \
 ## 7) Report
 
 A 4-page IEEE LaTeX report is provided in `report/`:
-- `report/main.tex`
+- `report/chronos-report.pdf`
 - `report/references.bib`
 
 After running experiments, copy figures/tables into `report/figures` and `report/tables`, then compile.
