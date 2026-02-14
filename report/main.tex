@@ -1,0 +1,77 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage{amsmath,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{url}
+
+\title{Chronos-2 Zero-shot Forecasting: Reproduction and Extensions}
+
+\author{
+\IEEEauthorblockN{Your Name}
+\IEEEauthorblockA{Master's Degree in \\
+University Name \\
+Email: you@example.com}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Chronos-2 is a pretrained, encoder-only foundation model for time-series forecasting that supports univariate, multivariate, and covariate-informed prediction in a zero-shot manner. In this project, we reproduce baseline zero-shot evaluation on benchmark datasets released by the Chronos authors on Hugging Face using the official \texttt{chronos-forecasting} inference package. We adopt a deterministic protocol that holds out the last $H$ observations of each series as the test horizon and uses the remaining history as context. We report point-forecast accuracy with the median prediction (MAE, RMSE, sMAPE) and probabilistic quality via weighted quantile loss over $\{0.1,0.5,0.9\}$ quantiles. Beyond reproduction, we implement two extensions: (i) a covariate ablation study that compares forecasting performance with full covariates versus dropping covariates (univariate-only), and (ii) a horizon-sensitivity analysis that sweeps multiple prediction lengths to characterize error growth and uncertainty widening as the horizon increases. All experiments are reproducible: each run exports predictions, metrics, plots, and a configuration file capturing arguments, package versions, runtime, and system information, enabling a concise IEEE-style report and 10-minute oral discussion.
+\end{abstract}
+
+\textbf{Repository:} \url{https://github.com/your-username/chronos2-project} (replace with your final link).
+
+\section{Problem Statement}
+Given a panel of time series, the goal is to forecast future target values for each series. Each observation is a tuple $(i, t, y_{i,t}, \mathbf{x}_{i,t})$ where $i$ is the series id, $t$ is the timestamp, $y_{i,t}$ is the target, and $\mathbf{x}_{i,t}$ are optional covariates (past-only or known-future). The task is to predict a horizon of length $H$:
+\begin{equation}
+\hat{y}_{i,t+1:t+H} = f_\theta(y_{i,1:t}, \mathbf{x}_{i,1:t+H}),
+\end{equation}
+where $f_\theta$ is Chronos-2 used \emph{as-is} (zero-shot). We evaluate both point and probabilistic forecasts.
+
+\section{Methodology}
+Chronos-2 is a pretrained encoder-only transformer that produces multi-step quantile forecasts. It supports arbitrary forecasting tasks (univariate, multivariate, and covariate-informed) via in-context learning and a \emph{group attention} mechanism that shares information across related series, variates, and covariates~\cite{ansari2025chronos2}. We use the official \texttt{chronos-forecasting} inference library and its Pandas API (columns: \texttt{id, timestamp, target, covariates*}) to run zero-shot inference on each dataset.
+
+\subsection{Forecasting Pipeline}
+\begin{algorithm}[t]
+\caption{Zero-shot evaluation with last-horizon split}
+\label{alg:eval}
+\begin{algorithmic}[1]
+\REQUIRE Panel data $\mathcal{D}$, horizon $H$, quantiles $\mathcal{Q}$
+\FOR{each series $i$ in $\mathcal{D}$}
+\STATE Sort observations by time
+\STATE Split: context $C_i = y_{i,1:T-H}$, test $T_i = y_{i,T-H+1:T}$
+\STATE Predict quantiles: $\hat{T}_i \leftarrow f_\theta(C_i; \mathcal{Q}, H)$
+\STATE Compute metrics between $\hat{T}_i$ and $T_i$
+\ENDFOR
+\STATE Aggregate metrics across series (mean)
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Metrics}
+We report MAE, RMSE, and sMAPE for the median ($q{=}0.5$) forecast. For probabilistic quality we use weighted quantile loss (WQL) averaged over $\mathcal{Q}=\{0.1,0.5,0.9\}$.
+
+\section{Experiments}
+\subsection{Datasets}
+We use benchmark datasets released by the Chronos authors via Hugging Face (\texttt{autogluon/chronos\_datasets} and \texttt{autogluon/chronos\_datasets\_extra})~\cite{chronosdatasets}. For covariate ablation, we use Electricity Transformer Temperature (ETT), which provides a target oil temperature and multiple exogenous load features~\cite{ettgithub}. For optional domain transfer we include a public electricity consumption dataset from Hugging Face~\cite{electricityhf}.
+
+\subsection{Experimental Design}
+We follow Algorithm~\ref{alg:eval}: for each series, the last $H$ points are test and the remainder is context. We run inference using \texttt{Chronos2Pipeline} (Chronos-2 model card~\cite{chronos2hf}) on a single GPU, log runtime, and save predictions and metrics as CSV/Parquet. Each run stores a \texttt{config.json} with arguments and system information.
+
+\subsection{Extensions}
+\textbf{E1: Covariate ablation.} On a covariate dataset, we evaluate (i) full inputs and (ii) univariate-only inputs obtained by dropping covariate columns, measuring the marginal contribution of exogenous information.
+
+\textbf{E2: Horizon sensitivity.} We sweep $H\in\{24,48,96,192\}$ and measure how errors and uncertainty change with horizon.
+
+\section{Results and Discussion}
+After running the scripts, include (i) a table of aggregate metrics for the baseline and extensions, and (ii) qualitative figures with quantile bands. The repository exports \texttt{metrics.csv} and \texttt{figures/*.png} per run to make the report integration straightforward.
+
+\section{Conclusions and Takeaways}
+Chronos-2 enables strong zero-shot forecasting across diverse task types without explicit training. Our extensions provide actionable guidance on (i) when covariates deliver measurable gains and (ii) how predictive quality decays as the horizon grows. The repository supports reproducible evaluation and can be adapted to new domains by converting data to the \texttt{id/timestamp/target/covariates} format.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}
