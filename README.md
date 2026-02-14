@@ -3,7 +3,7 @@
 This repository reproduces **zero-shot time-series forecasting** with **Chronos-2** and adds **two extensions**:
 1) **Covariate ablation** (with vs. without covariates) on multivariate/covariate datasets  
 2) **Horizon sensitivity** (short vs. long horizons) across datasets  
-3) *(Optional)* **Domain transfer** to an external dataset (e.g., electricity consumption)
+3) **Domain transfer** to an external dataset (e.g., electricity consumption)
 
 The code is designed to be **reproducible**: fixed seeds, deterministic splits, and all outputs saved as CSV + figures.
 
