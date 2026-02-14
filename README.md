@@ -1,23 +1,108 @@
-# 📈 Deep NLP Project: Chronos-2 Time Series Forecasting
+# Chronos-2 Project (Deep NLP / Foundation Models)
 
-**Course:** Deep Natural Language Processing (Master's Degree)  
-**Assigned Paper:** *Chronos-2: From Univariate to Universal Forecasting* **Report Link:** [Insert your Overleaf/PDF Link Here]  
+This repository reproduces **zero-shot time-series forecasting** with **Chronos-2** and adds **two extensions**:
+1) **Covariate ablation** (with vs. without covariates) on multivariate/covariate datasets  
+2) **Horizon sensitivity** (short vs. long horizons) across datasets  
+3) *(Optional)* **Domain transfer** to an external dataset (e.g., electricity consumption)
 
-## 🎯 Project Overview
-This repository contains the code and experiments for reproducing and extending the findings of the Chronos-2 paper. Chronos-2 frames time series forecasting as a language modeling problem, utilizing a T5-based architecture to predict quantized continuous values as discrete tokens. 
+The code is designed to be **reproducible**: fixed seeds, deterministic splits, and all outputs saved as CSV + figures.
 
-The primary goal of this project is to evaluate the model's touted "Universal Zero-Shot" capabilities and compare them directly against a domain-adapted (fine-tuned) version to assess whether foundation models still require targeted weight updates for optimal performance.
+## 1) Quickstart
 
-## 🚀 The Extension (Domain Adaptation)
-To satisfy the project extension requirements, this repository goes beyond the base paper by conducting a **Fine-Tuning vs. Zero-Shot Domain Adaptation Analysis**. 
-* **Zero-Shot Baseline:** Running the pre-trained `amazon/chronos-t5-tiny` model with frozen weights.
-* **Domain Adaptation:** Unfreezing the weights and fine-tuning the model on a specific time-series dataset.
-* **Evaluation:** Comparing the Mean Absolute Scaled Error (MASE) to quantify the performance gain achieved through domain adaptation.
+### Create environment
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -r requirements.txt
+pip install -e .
+```
 
-## 📂 Repository Structure
-```text
-├── data/                    # Directory for datasets (downloaded via script)
-├── notebooks/               
-│   └── chronos_experiments.ipynb  # Core reproducible experiment notebook
-├── requirements.txt         # Project dependencies
-└── README.md                # Project documentation
+> Recommended: `chronos-forecasting==2.1.0` (includes bug fixes for covariates during fine-tuning; safe for inference too).
+
+### Sanity check (model + GPU)
+```bash
+python scripts/sanity_check.py --device cuda
+```
+
+## 2) Baseline reproduction (Chronos datasets)
+
+Chronos benchmark datasets are published on Hugging Face as `autogluon/chronos_datasets` and `autogluon/chronos_datasets_extra`.
+
+List available dataset configs:
+```bash
+python scripts/list_dataset_configs.py --dataset autogluon/chronos_datasets
+python scripts/list_dataset_configs.py --dataset autogluon/chronos_datasets_extra
+```
+
+Run baseline on a chosen dataset (example config name; use the listing script to pick one):
+```bash
+python scripts/run_baseline.py \
+  --hf_dataset autogluon/chronos_datasets \
+  --config australian_electricity_demand \
+  --prediction_length 48 \
+  --max_series 200 \
+  --device cuda
+```
+
+Outputs (created automatically):
+- `results/<run_id>/metrics.csv` (aggregate + per-series metrics)
+- `results/<run_id>/predictions.parquet`
+- `results/<run_id>/figures/*.png`
+
+## 3) Extension 1 — Covariate ablation
+
+This compares Chronos-2 performance with full covariates vs. dropping covariates (univariate-only).
+
+```bash
+python scripts/run_covariate_ablation.py \
+  --hf_dataset autogluon/chronos_datasets_extra \
+  --config ETTh1 \
+  --prediction_length 24 \
+  --max_series 50 \
+  --device cuda
+```
+
+## 4) Extension 2 — Horizon sweep
+
+```bash
+python scripts/run_horizon_sweep.py \
+  --hf_dataset autogluon/chronos_datasets \
+  --config australian_electricity_demand \
+  --horizons 24,48,96,192 \
+  --max_series 200 \
+  --device cuda
+```
+
+## 5) (Optional) Extension 3 — Domain transfer
+
+Example using a public Hugging Face electricity dataset:
+```bash
+python scripts/run_domain_transfer.py \
+  --hf_dataset LeoTungAnh/electricity_hourly \
+  --prediction_length 24 \
+  --max_series 200 \
+  --device cuda
+```
+
+## 6) Reproducibility
+
+- All runs save a `config.json` with parameters, package versions, and GPU info.
+- Metrics are computed from the **same deterministic split** (last `prediction_length` points used as test).
+- Use `--seed` to control randomness.
+
+## 7) Report
+
+A 4-page IEEE LaTeX report is provided in `report/`:
+- `report/main.tex`
+- `report/references.bib`
+
+After running experiments, copy figures/tables into `report/figures` and `report/tables`, then compile.
+
+```bash
+cd report
+latexmk -pdf main.tex
+```
+
+## Suggested repo link for the report
+Replace the placeholder URL in the report with your GitHub repo link once you push this project.
